@@ -5,7 +5,42 @@ import json
 
 import numpy
 
-from _fft_bench import BenchmarkAccelerateSingle1D, BenchmarkAccelerateDouble1D, BenchmarkAccelerateSingle2D, BenchmarkAccelerateDouble2D
+
+@dataclass(frozen=True)
+class BenchType:
+    double: bool
+    n_d: int
+    backend: str = "Accelerate"
+
+    def name(self) -> str:
+        double = "Double" if self.double else "Single"
+        return f"Benchmark{self.backend}{double}{self.n_d}D"
+
+
+@dataclass(frozen=True, kw_only=True)
+class BenchResult(BenchType):
+    log2n: int
+    n_slices_per_call: int
+    times: numpy.ndarray
+
+    def to_json(self, **kwargs) -> str:
+        d = asdict(self)
+        d['times'] = list(d['times'])
+        return json.dumps(d, **kwargs)
+
+
+try:
+    from ._fft_accel import BenchmarkAccelerateSingle1D, BenchmarkAccelerateDouble1D, BenchmarkAccelerateSingle2D, BenchmarkAccelerateDouble2D
+
+    ACCEL_BENCHES = {
+        BenchType(False, 1): BenchmarkAccelerateSingle1D,
+        BenchType(True, 1): BenchmarkAccelerateDouble1D,
+        BenchType(False, 2): BenchmarkAccelerateSingle2D,
+        BenchType(True, 2): BenchmarkAccelerateDouble2D,
+    }
+except ImportError:
+    ACCEL_BENCHES = {}
+
 
 class BenchmarkNumpy():
     def __init__(self, log2n: int, n_slices: int, n_d, dtype):
@@ -36,41 +71,19 @@ class BenchmarkNumpyDouble2D(BenchmarkNumpy):
     def __init__(self, log2n: int, n_slices: int):
         super().__init__(log2n, n_slices, 2, numpy.complex128)
 
-@dataclass(frozen=True)
-class BenchType:
-    double: bool
-    n_d: int
-    backend: str = "Accelerate"
-
-    def name(self) -> str:
-        double = "Double" if self.double else "Single"
-        return f"Benchmark{self.backend}{double}{self.n_d}D"
-
-
-@dataclass(frozen=True, kw_only=True)
-class BenchResult(BenchType):
-    log2n: int
-    n_slices_per_call: int
-    times: numpy.ndarray
-
-    def to_json(self, **kwargs) -> str:
-        d = asdict(self)
-        d['times'] = list(d['times'])
-        return json.dumps(d, **kwargs)
-
-
-BENCHES = {
-    BenchType(False, 1): BenchmarkAccelerateSingle1D,
-    BenchType(True, 1): BenchmarkAccelerateDouble1D,
-    BenchType(False, 2): BenchmarkAccelerateSingle2D,
-    BenchType(True, 2): BenchmarkAccelerateDouble2D,
+NUMPY_BENCHES = {
     BenchType(False, 1, 'Numpy'): BenchmarkNumpySingle1D,
     BenchType(True, 1, 'Numpy'): BenchmarkNumpyDouble1D,
     BenchType(False, 2, 'Numpy'): BenchmarkNumpySingle2D,
     BenchType(True, 2, 'Numpy'): BenchmarkNumpyDouble2D,
 }
 
-assert len(BENCHES) == 8
+
+BENCHES = {
+    **NUMPY_BENCHES,
+    **ACCEL_BENCHES,
+}
+
 
 def main(argv=None):
     for log2n in [7, 10]:

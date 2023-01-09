@@ -1,10 +1,11 @@
 [project]
 name = "fft_bench"
-version = "0.1"
+description = ""
 requires-python = ">=3.9"
 dependencies = [
     "numpy>=1.20"
 ]
+dynamic = ["version"]
 
 [project.optional-dependencies]
 test = ["pytest>=6.2.4"]
@@ -13,9 +14,20 @@ test = ["pytest>=6.2.4"]
 fft-bench = "fft_bench.main:main"
 
 [build-system]
-requires = [
-    "setuptools>=51.0",
-    "wheel",
-    "pybind11~=2.6.1",
-]
-build-backend = "setuptools.build_meta"
+requires = ["pybind11~=2.6.1", "py-build-cmake~=0.1.2"]
+build-backend = "py_build_cmake.build"
+
+[tool.py-build-cmake.module]
+directory = "."
+
+[tool.py-build-cmake.sdist]
+include = ["CMakeLists.txt", "src/*.cpp", "src/*.hpp", "src/*.cu", "cmake/*.cmake"]
+
+[tool.py-build-cmake.cmake]
+minimum_version = "3.18"  # Required for CUDA improvements
+build_type = "RelWithDebInfo"
+source_path = "."
+build_args = ["-j"]
+install_components = ["python_modules"]
+
+[tool.py-build-cmake.stubgen]

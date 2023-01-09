@@ -8,17 +8,10 @@
 #include <tuple>
 #include <stdio.h>
 
+#include "benchmark.hpp"
+
 namespace py = pybind11;
 
-class Benchmark {
-    public:
-        size_t log2n;
-        size_t nrep;
-
-        Benchmark(size_t log2n, size_t nrep) : log2n(log2n), nrep(nrep) { }
-        virtual ~Benchmark() { }
-        virtual void run() = 0;
-};
 
 class BenchmarkAccelerateDouble1D : Benchmark {
     public:
@@ -130,8 +123,8 @@ class BenchmarkAccelerateSingle2D : Benchmark {
 };
 
 
-PYBIND11_MODULE(_fft_bench, m) {
-    m.doc() = "Benchmarking utilities";
+PYBIND11_MODULE(_fft_accel, m) {
+    m.doc() = "Accelerate framework";
 
     //m.def("fft1d", &fft1d, "FFT");
 
