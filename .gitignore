@@ -9,6 +9,7 @@ __pycache__/
 /.venv*/
 /docs/_build/
 
+.py-build-cmake_cache/
 .pytest_cache/
 .mypy_cache/
 .ipynb_checkpoints/
