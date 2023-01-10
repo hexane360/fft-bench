@@ -31,7 +31,7 @@ class BenchResult(BenchType):
 
 
 try:
-    from ._fft_accel import BenchmarkAccelerateSingle1D, BenchmarkAccelerateDouble1D, BenchmarkAccelerateSingle2D, BenchmarkAccelerateDouble2D
+    from ._fft_accel import BenchmarkAccelerateSingle1D, BenchmarkAccelerateDouble1D, BenchmarkAccelerateSingle2D, BenchmarkAccelerateDouble2D  # type: ignore
 except ImportError:
     ACCEL_BENCHES = {}
 else:
@@ -45,7 +45,7 @@ else:
 
 
 try:
-    from ._fft_cuda import BenchmarkCudaSingle1D, BenchmarkCudaDouble1D, BenchmarkCudaSingle2D, BenchmarkCudaDouble2D
+    from ._fft_cuda import BenchmarkCudaSingle1D, BenchmarkCudaDouble1D, BenchmarkCudaSingle2D, BenchmarkCudaDouble2D  # type: ignore
 except ImportError:
     CUDA_BENCHES = {}
 else:
