@@ -4,8 +4,8 @@ import sys
 import json
 from itertools import product
 
+from threadpoolctl import ThreadpoolController
 import numpy
-
 
 @dataclass(frozen=True)
 class BenchType:
@@ -100,21 +100,30 @@ BENCHES = {
 }
 
 def main(argv=None):
-    for (log2n, n_slices) in product([7, 8, 9, 10, 11, 12], [1, 2, 4, 6]):
-        for ty, bench in BENCHES.items():
-            if ty.backend != 'cuda' and n_slices != 2:
-                continue
-            print(f"{ty.name()} n={'x'.join([str(1 << log2n)] * ty.n_d)} n_slices={n_slices}", file=sys.stderr, flush=True)
+    # limit benchmarks to one thread
+    thread_controller = ThreadpoolController()
+    with thread_controller.limit(limits=1):
+        for (log2n, n_slices, (ty, bench)) in product(range(7, 13), [1, 2, 4, 6], BENCHES.items()):
+            if ty.backend != 'cuda':
+                # n_slices is used for benching memory transfer
+                if n_slices != 2:
+                    continue
+                # prune slow benchmarks
+                if ty.n_d > 1 and log2n > 11:
+                    continue
+
+            # approximately equal runtime for each test
+            # min 10 iterations, max 1000, 100 iterations for 2D 512x512
+            n = int(max(20, min(1000, 2*100 / (n_slices * 2**(1.5*(ty.n_d*log2n - 18))))))
+            total_n = n * n_slices
+
+            print(f"{ty.name()} n={'x'.join([str(1 << log2n)] * ty.n_d)} n_slices={n_slices} n_iter={total_n}", file=sys.stderr, flush=True)
             bench = bench(log2n, n_slices)
-
             timer = timeit.Timer(lambda: bench.run())
-            vec = numpy.array(timer.repeat(repeat=5, number=100 // n_slices))
-            total_n = (100 // n_slices) * n_slices
-
-            times_per_slice = vec / total_n
+            times_per_slice = numpy.array(timer.repeat(repeat=5, number=n)) / total_n
             #print(times_per_slice)
 
-            result = BenchResult(double=ty.double, n_d = ty.n_d, backend=ty.backend, log2n=log2n, n_slices_per_call=n_slices, times=times_per_slice)
+            result = BenchResult(double=ty.double, n_d=ty.n_d, backend=ty.backend, log2n=log2n, n_slices_per_call=n_slices, times=times_per_slice)
             print(result.to_json(), flush=True)
 
 
